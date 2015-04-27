@@ -5,7 +5,7 @@ end
 
 local load_time_start = os.clock()
 
-local maxdelay = 1
+local maxdelay = 0.5
 
 
 -- used for the table.sort function
