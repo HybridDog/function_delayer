@@ -5,7 +5,8 @@ end
 
 local load_time_start = os.clock()
 
-local maxdelay = 0.5
+local maxdelay = 1
+local skipstep = 5
 
 
 -- used for the table.sort function
@@ -21,6 +22,8 @@ function minetest.delay_function(time, func, ...)
 	table.sort(todo, sort_times)
 end
 
+local stepnum = 0
+local col_dtime = 0
 minetest.register_globalstep(function(dtime)
 	local count = #todo
 
@@ -28,6 +31,15 @@ minetest.register_globalstep(function(dtime)
 	if count == 0 then
 		return
 	end
+
+	-- abort if it's not the skipstepths step
+	stepnum = (stepnum+1)%skipstep
+	col_dtime = col_dtime+dtime
+	if stepnum ~= 0 then
+		return
+	end
+	dtime = col_dtime
+	col_dtime = 0
 
 	-- get the start time
 	local ts = tonumber(os.clock())-dtime

@@ -1,1 +1,11 @@
-should allow executing functions after a delay to reduce possible lag
+allows executing functions after a delay to reduce possible lag
+
+minetest.after executes the function after a specific time (and not exactly if it's lagging (dtime can be long))  
+and minetest.delay_function executes the function after a specific time only if it's lagging, the function can be and is usually executed earlier.
+
+If you e.g. want to grow 1000 big trees you can  
+either place them all at once and need to wait long until you can play again  
+or you can use minetest.delay_function to let the trees grow in globalsteps with time limit. e.g. growing of a couple of trees is not allowed to take more than 1s but all trees have to been grown after a specific time
+
+TODO:  
+— allow sorting, e.g. add nice level and execute functions from various mods alternatingly, add it to that sorting
