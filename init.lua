@@ -14,12 +14,12 @@ local function sort_times(a,b)
 	return a[1] < b[1]
 end
 
+local needs_sort
 local todo = {}
 function minetest.delay_function(time, func, ...)
-	table.insert(todo, {time, func, {...}})
+	todo[#todo+1] = {time, func, {...}}
 
-	-- execute the functions with lower delays earlier
-	table.sort(todo, sort_times)
+	needs_sort = true
 end
 
 local stepnum = 0
@@ -44,17 +44,26 @@ minetest.register_globalstep(function(dtime)
 	-- get the start time
 	local ts = tonumber(os.clock())-dtime
 
+	if needs_sort then
+		-- execute the functions with lower delays earlier
+		table.sort(todo, sort_times)
+		needs_sort = false
+	end
+
 	-- execute expired functions
 	local n = 1
-	while n <= count do
+	while true do
+		if not todo[n] then
+			break
+		end
 		local time = todo[n][1]
 		time = time-dtime
 		if time <= 0 then
-			local params = todo[n][3]
+			local params = todo[n][3] or {}
 			params[#params+1] = time
-			todo[n][2](unpack(params or {}))
+			local func = todo[n][2]
 			table.remove(todo, n)
-			count = count-1
+			func(unpack(params))
 		else
 			todo[n][1] = time
 			n = n+1
@@ -67,13 +76,15 @@ minetest.register_globalstep(function(dtime)
 	end
 
 	-- execute functions until the time limit is reached
-	n = 1
-	while n <= count do
-		local params = todo[n][3]
-		params[#params+1] = todo[n][1]
-		todo[n][2](unpack(params or {}))
-		table.remove(todo, n)
-		count = count-1
+	while true do
+		if not todo[1] then
+			return
+		end
+		local params = todo[1][3] or {}
+		params[#params+1] = todo[1][1]
+		local func = todo[1][2]
+		table.remove(todo, 1)
+		func(unpack(params))
 		if tonumber(os.clock())-ts > maxdelay then
 			return
 		end
