@@ -14,9 +14,12 @@ local function sort_times(a,b)
 	return a[1] < b[1]
 end
 
-local needs_sort
+local needs_sort, toadd
 local todo = {}
 function minetest.delay_function(time, func, ...)
+	if toadd then
+		time = time+toadd
+	end
 	todo[#todo+1] = {time, func, {...}}
 
 	needs_sort = true
@@ -51,6 +54,7 @@ minetest.register_globalstep(function(dtime)
 	end
 
 	-- execute expired functions
+	toadd = dtime
 	local n = 1
 	while true do
 		if not todo[n] then
@@ -58,7 +62,7 @@ minetest.register_globalstep(function(dtime)
 		end
 		local time = todo[n][1]
 		time = time-dtime
-		if time <= 0 then
+		if time < 0 then
 			local params = todo[n][3] or {}
 			params[#params+1] = time
 			local func = todo[n][2]
@@ -68,7 +72,9 @@ minetest.register_globalstep(function(dtime)
 			todo[n][1] = time
 			n = n+1
 		end
+		--print("expired")
 	end
+	toadd = nil
 
 	-- abort if too much time is used already
 	if tonumber(os.clock())-ts > maxdelay then
