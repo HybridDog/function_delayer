@@ -76,24 +76,14 @@ minetest.register_globalstep(function(dtime)
 	end
 	toadd = nil
 
-	-- abort if too much time is used already
-	if tonumber(os.clock())-ts > maxdelay then
-		return
-	end
-
 	-- execute functions until the time limit is reached
-	while true do
-		if not todo[1] then
-			return
-		end
+	while todo[1]
+	and tonumber(os.clock())-ts < maxdelay do
 		local params = todo[1][3] or {}
 		params[#params+1] = todo[1][1]
 		local func = todo[1][2]
 		table.remove(todo, 1)
 		func(unpack(params))
-		if tonumber(os.clock())-ts > maxdelay then
-			return
-		end
 	end
 end)
 
