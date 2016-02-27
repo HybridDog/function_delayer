@@ -8,16 +8,27 @@ local load_time_start = os.clock()
 
 local maxdelay = 1
 local skipstep = 5
+local lastmod_effect = 2
 
 
 local tasks = {}
 
 -- used for the table.sort function
+local previous_modname
 local function sort_times(a, b)
-	return tasks[a][1] < tasks[b][1]
+	a, b = tasks[a], tasks[b]
+	local a_first = b[1]-a[1]
+	if a[4] ~= b[4] then
+		if a[4] == previous_modname then
+			a_first = a_first-lastmod_effect
+		elseif b[4] == previous_modname then
+			a_first = a_first+lastmod_effect
+		end
+	end
+	return a_first > 0
 end
 
-local needs_sort, toadd
+local needs_sort, toadd, supramod
 local todo = {}
 function minetest.delay_function(time, func, ...)
 	if toadd then
@@ -25,7 +36,7 @@ function minetest.delay_function(time, func, ...)
 	end
 	local id = #tasks+1
 	todo[#todo+1] = id
-	tasks[id] = {time, func, {...}}
+	tasks[id] = {time, func, {...}, supramod or minetest.get_last_run_mod()}
 
 	needs_sort = true
 end
@@ -73,6 +84,7 @@ minetest.register_globalstep(function(dtime)
 			local params = task[3] or {}
 			params[#params+1] = time
 			local func = task[2]
+			supramod = task[4]
 			table.remove(todo, n)
 			tasks[id] = nil
 			func(unpack(params))
@@ -83,6 +95,7 @@ minetest.register_globalstep(function(dtime)
 		--print("expired")
 	end
 	toadd = nil
+	supramod = nil
 
 	-- execute functions until the time limit is reached
 	while todo[1]
@@ -91,10 +104,12 @@ minetest.register_globalstep(function(dtime)
 		local params = task[3] or {}
 		params[#params+1] = task[1]
 		local func = task[2]
+		supramod = task[4]
 		tasks[todo[1]] = nil
 		table.remove(todo, 1)
 		func(unpack(params))
 	end
+	supramod = nil
 end)
 
 local time = math.floor(tonumber(os.clock()-load_time_start)*100+0.5)/100

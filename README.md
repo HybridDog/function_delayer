@@ -11,4 +11,4 @@ Do not use make minetest.delay_function constantly call itself instead of using 
 it would call itself immediately very often in a loop, so without pauses.
 
 TODO:  
-— allow sorting, e.g. add nice level and execute functions from various mods alternatingly, add it to that sorting
+— add minetest.add_task where nice level can be set
