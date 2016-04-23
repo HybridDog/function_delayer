@@ -11,4 +11,5 @@ Do not use make minetest.delay_function constantly call itself instead of using 
 it would call itself immediately very often in a loop, so without pauses.
 
 TODO:  
-— add minetest.add_task where nice level can be set
+— add minetest.add_task where nice level can be set  
+— ensure if get_us_time really is faster (https://forum.minetest.net/viewtopic.php?p=214962#p214962)

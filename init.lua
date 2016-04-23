@@ -4,9 +4,10 @@ if minetest.delay_function then
 	return
 end
 
-local load_time_start = os.clock()
+local clock = minetest.get_us_time
+local load_time_start = clock()
 
-local maxdelay = 1
+local maxdelay = 1 * 1000000
 local skipstep = 5
 local lastmod_effect = 2
 
@@ -17,12 +18,12 @@ local tasks = {}
 local previous_modname
 local function sort_times(a, b)
 	a, b = tasks[a], tasks[b]
-	local a_first = b[1]-a[1]
+	local a_first = b[1] - a[1]
 	if a[4] ~= b[4] then
 		if a[4] == previous_modname then
-			a_first = a_first-lastmod_effect
+			a_first = a_first - lastmod_effect
 		elseif b[4] == previous_modname then
-			a_first = a_first+lastmod_effect
+			a_first = a_first + lastmod_effect
 		end
 	end
 	return a_first > 0
@@ -32,7 +33,7 @@ local needs_sort, toadd, supramod
 local todo = {}
 function minetest.delay_function(time, func, ...)
 	if toadd then
-		time = time+toadd
+		time = time + toadd
 	end
 	local id = #tasks+1
 	todo[#todo+1] = id
@@ -61,7 +62,7 @@ minetest.register_globalstep(function(dtime)
 	col_dtime = 0
 
 	-- get the start time
-	local ts = tonumber(os.clock())-dtime
+	local ts = clock() - dtime * 1000000
 
 	if needs_sort then
 		-- execute the functions with lower delays earlier
@@ -79,7 +80,7 @@ minetest.register_globalstep(function(dtime)
 		end
 		local task = tasks[id]
 		local time = task[1]
-		time = time-dtime
+		time = time - dtime
 		if time < 0 then
 			local params = task[3] or {}
 			params[#params+1] = time
@@ -99,7 +100,7 @@ minetest.register_globalstep(function(dtime)
 
 	-- execute functions until the time limit is reached
 	while todo[1]
-	and tonumber(os.clock())-ts < maxdelay do
+	and clock() - ts < maxdelay do
 		local task = tasks[todo[1]]
 		local params = task[3] or {}
 		params[#params+1] = task[1]
@@ -112,9 +113,9 @@ minetest.register_globalstep(function(dtime)
 	supramod = nil
 end)
 
-local time = math.floor(tonumber(os.clock()-load_time_start)*100+0.5)/100
-local msg = "[function_delayer] loaded after ca. "..time
-if time > 0.05 then
+local time = (clock()-load_time_start)/1000000
+local msg = "[function_delayer] loaded after ca. "..time.." seconds"
+if time > 0.01 then
 	print(msg)
 else
 	minetest.log("info", msg)
