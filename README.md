@@ -1,4 +1,4 @@
-allows executing functions after a delay to reduce possible lag
+allows executing functions after a delay to reduce possible lag (EDD scheduler?)
 
 minetest.after executes the function after a specific time (and not exactly if it's lagging (dtime can be long))  
 and minetest.delay_function executes the function after a specific time only if it's lagging, the function can be and is usually executed earlier.
