@@ -18,15 +18,17 @@ local tasks = {}
 local previous_modname
 local function sort_times(a, b)
 	a, b = tasks[a], tasks[b]
-	local a_first = b[1] - a[1]
-	if a[4] ~= b[4] then
-		if a[4] == previous_modname then
+	local a_first = b.time - a.time
+	if a.mod_origin ~= b.mod_origin then
+		if a.mod_origin == previous_modname then
 			a_first = a_first - lastmod_effect
-		elseif b[4] == previous_modname then
+		elseif b.mod_origin == previous_modname then
 			a_first = a_first + lastmod_effect
 		end
 	end
-	return a_first > 0
+	a_first = a_first > 0
+	previous_modname = a_first and a.mod_origin or b.mod_origin
+	return a_first
 end
 
 local needs_sort, toadd, supramod
@@ -37,7 +39,12 @@ function minetest.delay_function(time, func, ...)
 	end
 	local id = #tasks+1
 	todo[#todo+1] = id
-	tasks[id] = {time, func, {...}, supramod or minetest.get_last_run_mod()}
+	tasks[id] = {
+		time = time,
+		func = func,
+		params = {...},
+		mod_origin = supramod or minetest.get_last_run_mod()
+	}
 
 	needs_sort = true
 end
@@ -79,18 +86,17 @@ minetest.register_globalstep(function(dtime)
 			break
 		end
 		local task = tasks[id]
-		local time = task[1]
-		time = time - dtime
+		local time = task.time - dtime
 		if time < 0 then
-			local params = task[3] or {}
+			local params = task.params or {}
 			params[#params+1] = time
-			local func = task[2]
-			supramod = task[4]
+			local func = task.func
+			supramod = task.mod_origin
 			table.remove(todo, n)
 			tasks[id] = nil
 			func(unpack(params))
 		else
-			task[1] = time
+			task.time = time
 			n = n+1
 		end
 		--print("expired")
@@ -102,10 +108,10 @@ minetest.register_globalstep(function(dtime)
 	while todo[1]
 	and clock() - ts < maxdelay do
 		local task = tasks[todo[1]]
-		local params = task[3] or {}
-		params[#params+1] = task[1]
-		local func = task[2]
-		supramod = task[4]
+		local params = task.params or {}
+		params[#params+1] = task.time
+		local func = task.func
+		supramod = task.mod_origin
 		tasks[todo[1]] = nil
 		table.remove(todo, 1)
 		func(unpack(params))
