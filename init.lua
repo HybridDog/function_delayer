@@ -33,18 +33,21 @@ end
 
 local needs_sort, toadd, supramod
 local todo = {}
-function minetest.delay_function(time, func, ...)
+function minetest.delay_function(task, func, ...)
+	if type(task) == "number" then
+		task = {time = task}
+	end
 	if toadd then
-		time = time + toadd
+		task.time = task.time + toadd
 	end
 	local id = #tasks+1
 	todo[#todo+1] = id
-	tasks[id] = {
-		time = time,
-		func = func,
-		params = {...},
-		mod_origin = supramod or minetest.get_last_run_mod()
-	}
+	task.mod_origin = supramod or minetest.get_last_run_mod()
+	if func then
+		task.func = func
+		task.params = {...}
+	end
+	tasks[id] = task
 
 	needs_sort = true
 end
@@ -118,6 +121,24 @@ minetest.register_globalstep(function(dtime)
 	end
 	supramod = nil
 end)
+
+-- requested by raymoo
+minetest.register_on_shutdown(function()
+	-- execute functions until nothing is left
+	while todo[1] do
+		local task = tasks[todo[1]]
+		tasks[todo[1]] = nil
+		table.remove(todo, 1)
+		if task.run_on_shutdown then
+			local params = task.params or {}
+			params[#params+1] = task.time -- time is wrong here
+			local func = task.func
+			supramod = task.mod_origin
+			func(unpack(params))
+		end
+	end
+end)
+
 
 local time = (clock()-load_time_start)/1000000
 local msg = "[function_delayer] loaded after ca. "..time.." seconds"
